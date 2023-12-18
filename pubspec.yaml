@@ -12,7 +12,7 @@ dependencies:
   equatable: ^2.0.5
   flame: ^1.7.3
   flame_audio: ^2.0.2
-  flame_behaviors: ^0.2.0
+  flame_behaviors: ^1.0.0
   flutter:
     sdk: flutter
   flutter_bloc: ^8.1.3
