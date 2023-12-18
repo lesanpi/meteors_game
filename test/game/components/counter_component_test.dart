@@ -1,10 +1,9 @@
 // ignore_for_file: cascade_invocations
 
-import 'dart:io';
-
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flame/extensions.dart';
 import 'package:flame_test/flame_test.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:meteors_game/game/game.dart';
@@ -14,24 +13,28 @@ class _MockAppLocalizations extends Mock implements AppLocalizations {}
 
 class _MockAudioPlayer extends Mock implements AudioPlayer {}
 
-class _VeryGoodFlameGame extends VeryGoodFlameGame {
-  _VeryGoodFlameGame({required super.l10n, required super.effectPlayer});
+class _MeteorsGame extends MeteorsGame {
+  _MeteorsGame({
+    required super.l10n,
+    required super.effectPlayer,
+    required super.textStyle,
+  });
 
   @override
   Future<void> onLoad() async {}
 }
 
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
-  // https://github.com/material-foundation/flutter-packages/issues/286#issuecomment-1406343761
-  HttpOverrides.global = null;
-
   final l10n = _MockAppLocalizations();
-  _VeryGoodFlameGame createFlameGame() {
-    return _VeryGoodFlameGame(l10n: l10n, effectPlayer: _MockAudioPlayer());
+  _MeteorsGame createFlameGame() {
+    return _MeteorsGame(
+      l10n: l10n,
+      effectPlayer: _MockAudioPlayer(),
+      textStyle: const TextStyle(),
+    );
   }
 
-  group('CounterComponent', () {
+  group('$CounterComponent', () {
     setUp(() {
       when(() => l10n.counterText(any())).thenAnswer(
         (invocation) => 'counterText: ${invocation.positionalArguments[0]}',

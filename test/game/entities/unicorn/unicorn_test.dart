@@ -3,18 +3,23 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flame/extensions.dart';
 import 'package:flame_test/flame_test.dart';
+import 'package:flutter/painting.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:meteors_game/game/entities/unicorn/behaviors/behaviors.dart';
 import 'package:meteors_game/game/game.dart';
 import 'package:meteors_game/l10n/l10n.dart';
-import 'package:mocktail/mocktail.dart';
 
 class _MockAppLocalizations extends Mock implements AppLocalizations {}
 
 class _MockAudioPlayer extends Mock implements AudioPlayer {}
 
-class _VeryGoodFlameGame extends VeryGoodFlameGame {
-  _VeryGoodFlameGame({required super.l10n, required super.effectPlayer});
+class _MeteorsGame extends MeteorsGame {
+  _MeteorsGame({
+    required super.l10n,
+    required super.effectPlayer,
+    required super.textStyle,
+  });
 
   @override
   Future<void> onLoad() async {}
@@ -24,8 +29,12 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   final l10n = _MockAppLocalizations();
-  _VeryGoodFlameGame createFlameGame() {
-    return _VeryGoodFlameGame(l10n: l10n, effectPlayer: _MockAudioPlayer());
+  _MeteorsGame createFlameGame() {
+    return _MeteorsGame(
+      l10n: l10n,
+      effectPlayer: _MockAudioPlayer(),
+      textStyle: const TextStyle(),
+    );
   }
 
   group('Unicorn', () {
@@ -64,11 +73,11 @@ void main() {
           await game.ensureAdd(unicorn);
 
           unicorn.playAnimation();
-          expect(unicorn.animation.currentIndex, equals(0));
+          expect(unicorn.animationTicker.currentIndex, equals(0));
 
           game.update(0.1);
 
-          expect(unicorn.animation.currentIndex, equals(1));
+          expect(unicorn.animationTicker.currentIndex, equals(1));
           expect(unicorn.isAnimationPlaying(), equals(true));
         },
       );
@@ -82,15 +91,15 @@ void main() {
 
           unicorn.playAnimation();
           game.update(0.1);
-          expect(unicorn.animation.currentIndex, equals(1));
+          expect(unicorn.animationTicker.currentIndex, equals(1));
           expect(unicorn.isAnimationPlaying(), equals(true));
 
           unicorn.resetAnimation();
           expect(unicorn.isAnimationPlaying(), equals(false));
-          expect(unicorn.animation.currentIndex, equals(0));
+          expect(unicorn.animationTicker.currentIndex, equals(0));
 
           game.update(0.1);
-          expect(unicorn.animation.currentIndex, equals(0));
+          expect(unicorn.animationTicker.currentIndex, equals(0));
           expect(unicorn.isAnimationPlaying(), equals(false));
         },
       );

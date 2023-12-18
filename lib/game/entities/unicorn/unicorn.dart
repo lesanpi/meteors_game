@@ -1,12 +1,16 @@
+import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
+import 'package:flame/game.dart';
+import 'package:flame/sprite.dart';
 import 'package:flame_behaviors/flame_behaviors.dart';
 import 'package:flutter/material.dart';
 import 'package:meteors_game/game/entities/unicorn/behaviors/tapping_behavior.dart';
 import 'package:meteors_game/gen/assets.gen.dart';
 
-class Unicorn extends PositionedEntity with HasGameRef {
+class Unicorn extends PositionedEntity with HasGameRef, CollisionCallbacks {
   Unicorn({
     required super.position,
+    required this.joystick,
   }) : super(
           anchor: Anchor.center,
           size: Vector2.all(32),
@@ -18,17 +22,36 @@ class Unicorn extends PositionedEntity with HasGameRef {
   @visibleForTesting
   Unicorn.test({
     required super.position,
+    required this.joystick,
     super.behaviors,
   }) : super(size: Vector2.all(32));
 
-  SpriteAnimation? _animation;
+  final JoystickComponent joystick;
+
+  late SpriteAnimationComponent _animationComponent;
 
   @visibleForTesting
-  SpriteAnimation get animation => _animation!;
+  SpriteAnimationTicker get animationTicker =>
+      _animationComponent.animationTicker!;
+
+  /// Pixels/s
+  double maxSpeed = 300;
+  late final Vector2 _lastSize = size.clone();
+  late final Transform2D _lastTransform = transform.clone();
+
+  @override
+  void update(double dt) {
+    if (!joystick.delta.isZero() && activeCollisions.isEmpty) {
+      _lastSize.setFrom(size);
+      _lastTransform.setFrom(transform);
+      position.add(joystick.relativeDelta * maxSpeed * dt);
+      angle = joystick.delta.screenAngle();
+    }
+  }
 
   @override
   Future<void> onLoad() async {
-    _animation = await gameRef.loadSpriteAnimation(
+    final animation = await gameRef.loadSpriteAnimation(
       Assets.images.unicornAnimation.path,
       SpriteAnimationData.sequenced(
         amount: 16,
@@ -38,24 +61,26 @@ class Unicorn extends PositionedEntity with HasGameRef {
       ),
     );
 
-    resetAnimation();
-    animation.onComplete = resetAnimation;
+    await add(
+      _animationComponent = SpriteAnimationComponent(
+        animation: animation,
+        size: size,
+      ),
+    );
 
-    await add(SpriteAnimationComponent(animation: _animation, size: size));
+    resetAnimation();
   }
 
-  /// Set the animation to the first frame by tricking the animation
-  /// into thinking it finished the last frame.
   void resetAnimation() {
-    animation
-      ..currentIndex = _animation!.frames.length - 1
+    animationTicker
+      ..currentIndex = animationTicker.spriteAnimation.frames.length - 1
       ..update(0.1)
       ..currentIndex = 0;
   }
 
   /// Plays the animation.
-  void playAnimation() => animation.reset();
+  void playAnimation() => animationTicker.reset();
 
   /// Returns whether the animation is playing or not.
-  bool isAnimationPlaying() => !animation.isFirstFrame;
+  bool isAnimationPlaying() => !animationTicker.done();
 }

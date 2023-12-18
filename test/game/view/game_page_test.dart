@@ -1,11 +1,13 @@
 // ignore_for_file: prefer_const_constructors
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flame_audio/bgm.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -23,12 +25,34 @@ class _MockAudioPlayer extends Mock implements AudioPlayer {}
 class _MockBgm extends Mock implements Bgm {}
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  // https://github.com/material-foundation/flutter-packages/issues/286#issuecomment-1406343761
+  HttpOverrides.global = null;
+
+  setUpAll(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+      MethodChannel('xyz.luan/audioplayers'),
+      (message) => null,
+    );
+
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+      const MethodChannel('plugins.flutter.io/path_provider'),
+      (message) async => switch (message.method) {
+        ('getTemporaryDirectory' || 'getApplicationSupportDirectory') =>
+          Directory.systemTemp.createTempSync('fake').path,
+        _ => null,
+      },
+    );
+  });
+
   group('GamePage', () {
     late PreloadCubit preloadCubit;
 
     setUp(() {
       preloadCubit = MockPreloadCubit();
-      when(() => preloadCubit.audio).thenReturn(AudioCache());
+      when(() => preloadCubit.audio).thenReturn(AudioCache(prefix: ''));
     });
 
     setUpAll(() {
@@ -54,6 +78,8 @@ void main() {
         await tester.pump();
 
         expect(find.byType(GamePage), findsOneWidget);
+
+        await tester.pumpWidget(Container());
       });
     });
 
